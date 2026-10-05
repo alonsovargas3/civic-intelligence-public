@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ATX Civic Data</title>
+    <link href="https://unpkg.com/maplibre-gl@4.5.0/dist/maplibre-gl.css" rel="stylesheet" />
+    <style>
+      * { box-sizing: border-box; }
+      html, body { margin: 0; height: 100%; }
+      body {
+        font-family: var(--font-sans, system-ui, sans-serif);
+        color: var(--fg, #2b2f36); background: var(--canvas, #f0f1f2);
+        -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility;
+      }
+      #root { height: 100vh; }
+      button { font-family: var(--font-sans, system-ui, sans-serif); }
+      ::-webkit-scrollbar { width: 10px; height: 10px; }
+      ::-webkit-scrollbar-thumb {
+        background: var(--hairline-strong, #d0d4d8); border-radius: 999px;
+        border: 3px solid var(--surface, #fff);
+      }
+    </style>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.jsx"></script>
+  </body>
+</html>

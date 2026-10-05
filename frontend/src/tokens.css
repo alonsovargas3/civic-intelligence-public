@@ -1,0 +1,159 @@
+/* ============================================================================
+   ATX Civic Data — Design System
+   colors_and_type.css  ·  base + semantic tokens
+   ----------------------------------------------------------------------------
+   A civic-data research tool. The visual core is the ColorBrewer "Blues"
+   sequential choropleth (kept verbatim from the live MapLibre map) set against
+   a quiet, near-neutral government palette. Type pairs Public Sans (the USWDS
+   civic typeface) for UI with IBM Plex Mono for data, counts, codes and tags.
+   ========================================================================== */
+
+@import url('https://fonts.googleapis.com/css2?family=Public+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,400&family=IBM+Plex+Mono:wght@400;500;600&display=swap');
+
+:root {
+  /* ---- Font families --------------------------------------------------- */
+  --font-sans: 'Public Sans', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-mono: 'IBM Plex Mono', ui-monospace, 'SFMono-Regular', Menlo, monospace;
+
+  /* ---- Neutrals (warm editorial greys) --------------------------------- */
+  --canvas:          #f6f4ef;   /* warm cream page background                */
+  --surface:         #ffffff;   /* cards, panel                              */
+  --surface-2:       #faf8f4;   /* inset / hover fill                        */
+  --surface-3:       #f0ede6;   /* pressed / track                          */
+  --ink:             #262a33;   /* headings                                  */
+  --fg:              #3a4049;   /* body text                                 */
+  --fg-muted:        #6d7581;   /* secondary text, captions                  */
+  --fg-subtle:       #949aa5;   /* tertiary, disabled, footnotes             */
+  --hairline:        #e6e2da;   /* default 1px borders                       */
+  --hairline-strong: #d8d3c8;   /* dividers needing more weight              */
+
+  /* ---- Primary (civic blue, drawn from the choropleth) ----------------- */
+  --primary:       #2171b5;     /* interactive accent                        */
+  --primary-deep:  #08519c;     /* hover / emphasis                          */
+  --primary-ink:   #08306b;     /* active text, darkest map blue             */
+  --primary-tint:  #eaf2fb;     /* selected row / active tab fill            */
+  --primary-ring:  rgba(33,113,181,.35); /* focus ring                       */
+
+  /* ---- Accent (coral) · INTERACTIVE ONLY (links, CTAs, active states) --- *
+     Never use for data encodings — the choropleth/charts stay Blues.       */
+  --accent:      #F77660;       /* button fill, toggle-active, logo shard    */
+  --accent-deep: #d95a45;       /* link text, "Read →"                       */
+  --accent-ink:  #b8402c;       /* pressed / active coral text               */
+  --accent-tint: #fdeee9;       /* coral selected / hover fill               */
+
+  /* ---- Slate band (hero + footer) -------------------------------------- */
+  --slate:           #3e4a61;
+  --on-slate:        #f6f4ef;   /* text on slate                             */
+  --on-slate-muted:  #aeb6c6;   /* muted text on slate                       */
+
+  /* ---- Warm secondary (category accents, pills, logo shards) ----------- */
+  --amber:      #FEAF56;
+  --orange:     #EA8253;
+  --sage:       #BDD0C1;
+  --slate-blue: #818CA0;
+
+  /* ---- Data viz · ColorBrewer "Blues" sequential (BRAND-CRITICAL) ------ *
+     The map interpolates percentile 0 -> 50 -> 100 across this ramp.
+     Never recolor the choropleth; reuse these for any density encoding.    */
+  --blue-0: #f7fbff;
+  --blue-1: #deebf7;
+  --blue-2: #c6dbef;
+  --blue-3: #9ecae1;
+  --blue-4: #6baed6;
+  --blue-5: #4292c6;
+  --blue-6: #2171b5;
+  --blue-7: #08519c;
+  --blue-8: #08306b;
+  --map-outline: #333333;       /* district hairline on the map             */
+  --map-label:   #ffffff;       /* district number labels                   */
+
+  /* ---- Semantic -------------------------------------------------------- */
+  --flag:        #c0152b;       /* HIGH DISPERSION / over-assessed / alert   */
+  --flag-bg:     #fcecec;
+  --flag-border: #f0c9cd;
+  --info:        #0a63c2;       /* under-assessed / neutral signal           */
+  --info-bg:     #eaf2fb;
+  --positive:    #1f7a4d;       /* closed / resolved                         */
+  /* methodology / caveat callout (the yellow box, refined) */
+  --warn-bg:     #fff8e1;
+  --warn-border: #e6cf86;
+  --warn-ink:    #6b5512;
+
+  /* ---- Radius ---------------------------------------------------------- */
+  --r-sm:  6px;
+  --r-md:  10px;
+  --r-lg:  14px;
+  --r-pill: 999px;
+
+  /* ---- Elevation ------------------------------------------------------- */
+  --shadow-sm:  0 1px 2px rgba(20,23,26,.06), 0 1px 1px rgba(20,23,26,.04);
+  --shadow-md:  0 4px 16px -4px rgba(20,23,26,.12);
+  --shadow-pop: 0 10px 34px -8px rgba(20,23,26,.22);
+
+  /* ---- Spacing (4px base) --------------------------------------------- */
+  --s1: 4px;  --s2: 8px;  --s3: 12px; --s4: 16px;
+  --s5: 24px; --s6: 32px; --s7: 48px; --s8: 64px;
+
+  /* ---- Motion ---------------------------------------------------------- */
+  --ease: cubic-bezier(.2,.6,.2,1);
+  --dur:  150ms;
+}
+
+/* ============================================================================
+   Base element styles  (semantic type)
+   ========================================================================== */
+.cii-type { font-family: var(--font-sans); color: var(--fg); }
+
+.cii-type h1, .cii-h1 {
+  font: 800 24px/1.15 var(--font-sans);
+  letter-spacing: -.015em;
+  color: var(--ink);
+  margin: 0;
+}
+.cii-type h2, .cii-h2 {
+  font: 700 18px/1.25 var(--font-sans);
+  letter-spacing: -.01em;
+  color: var(--ink);
+  margin: 0;
+}
+/* Section eyebrow — "TOTALS", "TOP CATEGORIES" */
+.cii-eyebrow {
+  font: 600 11.5px/1 var(--font-sans);
+  letter-spacing: .09em;
+  text-transform: uppercase;
+  color: var(--fg-muted);
+  margin: 0;
+}
+.cii-type p, .cii-body {
+  font: 400 15px/1.55 var(--font-sans);
+  color: var(--fg);
+  margin: 0;
+  text-wrap: pretty;
+}
+.cii-small {
+  font: 400 13px/1.5 var(--font-sans);
+  color: var(--fg-muted);
+}
+.cii-footnote {
+  font: 400 12px/1.45 var(--font-sans);
+  color: var(--fg-subtle);
+}
+
+/* Data / numerals — tabular mono */
+.cii-stat {
+  font: 600 30px/1 var(--font-mono);
+  letter-spacing: -.02em;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+.cii-mono {
+  font: 500 13px/1.4 var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  color: var(--fg);
+}
+/* Uppercase status tag — "HIGH DISPERSION", "OVER-ASSESSED" */
+.cii-tag {
+  font: 600 11px/1 var(--font-mono);
+  letter-spacing: .06em;
+  text-transform: uppercase;
+}

@@ -1,0 +1,10 @@
+[
+  { "url": "/v1/metric/incidents?dataset=crime&period=2025", "path": "/data/metric_incidents_dataset_crime_period_2025.json" },
+  { "url": "/v1/place/district/7?period=2024", "path": "/data/place_district_7_period_2024.json" },
+  { "url": "/v1/districts.geojson", "path": "/data/districts_geojson.json" },
+  { "url": "/v1/zips.geojson?property_class=A1", "path": "/data/zips_geojson_property_class_A1.json" },
+  { "url": "/v1/ownership/owner-type?property_class=A1", "path": "/data/ownership_owner_type_property_class_A1.json" },
+  { "url": "/v1/methods/crime", "path": "/data/methods_crime.json" },
+  { "url": "/v1/council/funding-activity", "path": "/data/council_funding_activity.json" },
+  { "url": "/v1/stories/who-owns-austin", "path": "/data/stories_who_owns_austin.json" }
+]

@@ -1,0 +1,51 @@
+services:
+  db:
+    image: postgres:16
+    restart: unless-stopped
+    # Default /dev/shm is 64MB, which parallel hash-aggregate workers exhaust on
+    # the large analytic GROUP BYs (~486k parcels) -> DiskFull on a shared memory
+    # segment. 1GB lets parallel query run; analytic builds no longer need to
+    # disable it per-query.
+    shm_size: 1gb
+    # LOCAL DEVELOPMENT ONLY. These are well-known placeholder credentials, not
+    # secrets. Never deploy this stack as-is; use your own credentials via env.
+    environment:
+      POSTGRES_USER: atx
+      POSTGRES_PASSWORD: atx
+      POSTGRES_DB: atx_civic
+    # Bound to loopback so the dev database is not reachable from the network.
+    ports: ["127.0.0.1:5432:5432"]
+    volumes: ["pgdata:/var/lib/postgresql/data"]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U atx"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  ingester:
+    build: .
+    # Ingestion is opt-in behind --profile ingest; a plain `docker compose up`
+    # starts only the db. This service's command is an interval poll LOOP
+    # (`run --interval 1800`), so even `docker compose --profile ingest run --rm
+    # ingester` loops rather than doing one pass. For a single pass, run
+    # `python -m atx_ingest.cli run-once` locally against the db instead.
+    profiles: ["ingest"]
+    # Survive crashes, Docker daemon restarts, and laptop reboots. Combined with
+    # the run loop's per-pass try/except, the poll keeps itself alive unattended.
+    restart: unless-stopped
+    # tini as PID 1: reaps zombies and forwards SIGTERM so `docker compose stop`
+    # ends a pass promptly instead of waiting out the 10s SIGKILL grace period.
+    init: true
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://atx:atx@db:5432/atx_civic
+      SOCRATA_DOMAIN: data.austintexas.gov
+      SOCRATA_APP_TOKEN: ${SOCRATA_APP_TOKEN:-}
+    # `exec` hands the run loop PID-of-the-shell so the SIGTERM tini forwards
+    # reaches Python directly (init is idempotent, so re-running it on restart is safe).
+    command: ["sh", "-c", "python -m atx_ingest.cli init && exec python -m atx_ingest.cli run --interval 1800"]
+
+volumes:
+  pgdata:

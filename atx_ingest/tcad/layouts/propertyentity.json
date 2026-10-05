@@ -1,0 +1,20 @@
+{
+  "file": "PROP_ENT.TXT",
+  "layout_version": "legacy_8.0.32",
+  "record_length": 3081,
+  "encoding": "latin-1",
+  "fields": [
+    {"name": "prop_id", "start": 1, "end": 12, "type": "int"},
+    {"name": "prop_val_yr", "start": 13, "end": 17, "type": "int"},
+    {"name": "sup_num", "start": 18, "end": 29, "type": "int"},
+    {"name": "owner_id", "start": 30, "end": 41, "type": "int"},
+    {"name": "entity_id", "start": 42, "end": 53, "type": "int"},
+    {"name": "entity_cd", "start": 54, "end": 63, "type": "str"},
+    {"name": "entity_name", "start": 64, "end": 113, "type": "str"},
+    {"name": "taxable_val", "start": 164, "end": 178, "type": "int"},
+    {"name": "hs_amt", "start": 299, "end": 313, "type": "int"},
+    {"name": "hs_cap", "start": 419, "end": 433, "type": "int"},
+    {"name": "hs_state_amt", "start": 464, "end": 478, "type": "int"},
+    {"name": "hs_local_amt", "start": 479, "end": 493, "type": "int"}
+  ]
+}

@@ -1,0 +1,318 @@
+# Austin civic-data sources — Socrata SODA API on data.austintexas.gov
+#
+# Adding a Socrata source = add an entry below. Defaults make it schema-agnostic:
+#   primary_key  -> :id          (Socrata's stable system row id; always present)
+#   cursor_field -> :updated_at  (freshness; always present on modern datasets)
+# So you usually only need dataset_id + name + table.
+#
+# To inspect a dataset's real columns first:
+#   python -m atx_ingest.cli discover <dataset_id>
+#
+# Dataset ids below were confirmed against the City of Austin open-data catalog.
+
+sources:
+  - dataset_id: xwdj-i9he
+    name: "Austin 311 Service Requests"
+    table: austin_311
+    enabled: false   # bulk history archived to NAS; restore-on-demand for refresh, never resident
+    cursor_field: ":updated_at"   # 311 also exposes created_date / last_update_date
+    page_size: 2000
+
+  - dataset_id: 3syk-w9eu
+    name: "Issued Construction Permits"
+    table: construction_permits
+    enabled: false   # bulk history archived to NAS; restore-on-demand for refresh, never resident
+    cursor_field: ":updated_at"
+    page_size: 2000
+
+  # APD publishes one rolling "Crime Reports" dataset (2003-present). The legacy
+  # per-year datasets (e.g. hbc5-hmey "Crime Reports 2024") are now described
+  # on the catalog as filtered views of this one — same underlying rows, just
+  # year-sliced. If you ever need a year-specific table, build it as a SQL view
+  # over raw_crime_reports rather than ingesting the filtered Socrata view.
+  - dataset_id: fdj4-gpfu
+    name: "Crime Reports"
+    table: crime_reports
+    enabled: false   # bulk history archived to NAS; restore-on-demand for refresh, never resident
+    cursor_field: ":updated_at"
+    page_size: 2000
+    # fdj4-gpfu is a full-ETL republish: APD rebuilds the whole rolling dataset
+    # on a schedule and every row shares one :updated_at, so the >= cursor has no
+    # row-level incrementality and re-pulls all ~2.64M rows every poll (~16 min).
+    # Throttle to daily so the 30-min base loop isn't dominated by it. Tune down
+    # if you find APD republishes more often than once a day.
+    min_interval_seconds: 86400
+
+  # Vision Zero crash-level records (City of Austin Full-Purpose boundaries,
+  # ~last 10 yrs). Canonical of several look-alikes: xecs-rpy9 is the per-victim
+  # companion; 3aut-fhzp / v3x4-fjgm are TEST copies — don't use those. The data
+  # columns expose crash_timestamp / crash_timestamp_ct but no updated_* column,
+  # so :updated_at (the ETL system field) is the cursor. If a backfill 400s on
+  # it, fall back to `cursor_field: crash_timestamp`.
+  - dataset_id: y2wy-tgr5
+    name: "Austin Crash Report Data - Crash Level Records"
+    table: traffic_crashes
+    enabled: false   # bulk history archived to NAS; restore-on-demand for refresh, never resident
+    cursor_field: ":updated_at"
+    page_size: 2000
+
+  # Austin Code Department complaint / enforcement cases (rolling, updated daily).
+  # Canonical; the bare "Code Cases" ids (4gyu-7b5n, ssyr-fj3w) are stale/foreign
+  # and 404 on the API.
+  - dataset_id: 6wtj-zbtb
+    name: "Austin Code Complaint Cases"
+    table: code_cases
+    enabled: false   # bulk history archived to NAS; restore-on-demand for refresh, never resident
+    cursor_field: ":updated_at"
+    page_size: 2000
+
+  # AFO checkbook (Austin Finance Online eCheckbook) — city spend, ~2.09M rows,
+  # check/EFT issue dates 2014-10 -> present. The "Tier 2 flat file" in CLAUDE.md is
+  # ALSO published on Socrata as 8c6z-qnmj, so it rides the Tier 1 pipeline (has
+  # :id + :updated_at) — no separate batch loader needed. Unlike crime, it has REAL
+  # incrementality: 221 distinct :updated_at, refreshed ~weekly (Mondays), with a
+  # 1.56M-row migration baseline stamped 2021-09-17 then weekly increments. Because it
+  # only changes weekly, daily polling is plenty and avoids needless 30-min boundary
+  # re-pulls. Caveat for any UI: AFO excludes some Austin Energy txns (TX Gov Code
+  # 552.133), so totals won't fully reconcile.
+  - dataset_id: 8c6z-qnmj
+    name: "Austin Finance Online eCheckbook"
+    table: afo_checkbook
+    enabled: false   # bulk history archived to NAS; restore-on-demand for refresh, never resident
+    cursor_field: ":updated_at"
+    page_size: 2000
+    min_interval_seconds: 86400   # refreshed ~weekly -> daily poll is plenty
+
+  # --- Tier 3: Austin City Council via the Legistar Web API (kind: legistar) ---
+  # Structured JSON, no scraping. Client slug 'austintexas' (NOT 'austin', which
+  # 500s). Each entity is incremental on its own *LastModifiedUtc; OData $filter.
+  # Daily cadence (council meets ~weekly, so 30-min polling buys nothing).
+  - dataset_id: Events
+    name: "Austin City Council — Events"
+    table: council_events
+    kind: legistar
+    primary_key: EventId
+    cursor_field: EventLastModifiedUtc
+    page_size: 1000
+    min_interval_seconds: 86400
+
+  - dataset_id: Matters
+    name: "Austin City Council — Matters"
+    table: council_matters
+    kind: legistar
+    primary_key: MatterId
+    cursor_field: MatterLastModifiedUtc
+    page_size: 1000
+    min_interval_seconds: 86400
+
+  - dataset_id: Persons
+    name: "Austin City Council — Persons"
+    table: council_persons
+    kind: legistar
+    primary_key: PersonId
+    cursor_field: PersonLastModifiedUtc
+    page_size: 1000
+    min_interval_seconds: 86400
+
+  - dataset_id: Bodies
+    name: "Austin City Council — Bodies"
+    table: council_bodies
+    kind: legistar
+    primary_key: BodyId
+    cursor_field: BodyLastModifiedUtc
+    page_size: 1000
+    min_interval_seconds: 86400
+
+  # EventItems has no global list endpoint: LegistarClient drills per-event and
+  # stamps each item with its parent event's freshness under _event_last_modified,
+  # which is therefore the cursor_field here.
+  - dataset_id: EventItems
+    name: "Austin City Council — Event Items"
+    table: council_event_items
+    kind: legistar
+    primary_key: EventItemId
+    cursor_field: _event_last_modified
+    page_size: 1000
+    min_interval_seconds: 86400
+
+  # Matter sponsors: no global list endpoint — LegistarClient drills per matter
+  # (Matters/{id}/Sponsors), stamping each sponsor with its parent matter's
+  # freshness under _matter_last_modified (the cursor here). Gives donor->member->
+  # sponsored-matter linkage. (Legistar's API doesn't expose per-member votes, but
+  # they ARE published separately on Socrata — see council_votes / 3c89-i35a below.)
+  - dataset_id: MatterSponsors
+    name: "Austin City Council — Matter Sponsors"
+    table: council_matter_sponsors
+    kind: legistar
+    primary_key: MatterSponsorId
+    cursor_field: _matter_last_modified
+    page_size: 1000
+    min_interval_seconds: 86400
+
+  # --- Campaign finance (City of Austin, on Socrata — the money->influence arm) ---
+  # Austin municipal campaign finance is published on data.austintexas.gov (NOT TEC,
+  # which covers state/county filers), so it rides the Tier-1 pipeline directly.
+  # Two type-specific tables; we deliberately SKIP "Transaction Detail" (g4yx-aw9r),
+  # which is the generic union of these two (~268k = 240k contrib + 28k exp) with
+  # less analysis-friendly columns. Both carry real :id + :updated_at; filings update
+  # on reporting cycles, so daily polling is plenty.
+  - dataset_id: 3kfv-biw6
+    name: "Campaign Finance — Contributions"
+    table: campaign_contributions
+    enabled: false   # bulk history archived to NAS; restore-on-demand for refresh, never resident
+    cursor_field: ":updated_at"   # donor -> recipient, amount, date; the influence INPUT
+    page_size: 2000
+    min_interval_seconds: 86400
+
+  - dataset_id: gd3e-xut2
+    name: "Campaign Finance — Expenditures"
+    table: campaign_expenditures
+    cursor_field: ":updated_at"   # paid_by -> payee, amount, description
+    page_size: 2000
+    min_interval_seconds: 86400
+
+  # City Council per-member ROLL-CALL VOTES (Socrata 3c89-i35a) — the votes that
+  # Austin's Legistar API does NOT expose. Columns: voter_name, voter_district,
+  # vote_cast (Yes/No/Abstain/Recused/Absent/...), action_taken, item_description,
+  # meeting_date, item_id. ~68k member-votes, 2023-present. Full republish (one
+  # :updated_at) so daily polling re-pulls all ~68k harmlessly. Unlocks the
+  # money->influence arm (contribution -> member -> their vote -> contract).
+  - dataset_id: 3c89-i35a
+    name: "City of Austin Council Voting Record"
+    table: council_votes
+    cursor_field: ":updated_at"
+    page_size: 2000
+    min_interval_seconds: 86400
+
+  # City Contracts (Socrata 84ih-p28j): award-level contracts — vendor legal name
+  # (lgl_nm, matches the checkbook), amount (ma_prch_lmt_am), board award date
+  # (brd_awd_dt — has a century-digit quirk, e.g. 0022 = 2022, clean on read),
+  # category (cat_dscr incl. 'Sole and Single Source'). ~625 rows. Gives the
+  # award-date temporal ordering the donor->contract analysis needs.
+  - dataset_id: 84ih-p28j
+    name: "City of Austin Contracts"
+    table: city_contracts
+    cursor_field: ":updated_at"
+    page_size: 2000
+    min_interval_seconds: 86400
+
+  # --- Equity layer: demographics for cross-analysis -------------------------
+  # 2022 Council District Demographic Data (Socrata puux-7swp): ONE ROW PER
+  # council district (1-10), ~129 cols — total_population, age bands, median_age,
+  # household-income bands (hh_income_*), race (total_white/black/hispanic_latinx/
+  # asian/another_race), education and owner-occupancy by race. The district
+  # income/race reference that lets crime/311/service metrics be read by district
+  # demographics. Static (2022 vintage) so daily polling just re-confirms 10 rows.
+  - dataset_id: puux-7swp
+    name: "2022 Austin Council District Demographic Data"
+    table: district_demographics
+    cursor_field: ":updated_at"
+    page_size: 1000
+    min_interval_seconds: 86400
+
+  # Crash VICTIM demographic records (Socrata xecs-rpy9): per-person rows with
+  # prsn_age, prsn_ethnicity_label, prsn_sex_label, mode_desc (pedestrian/motorcycle/
+  # ...), injury severity, cris_crash_id (links to raw_traffic_crashes). The
+  # companion to crash-level records — deepens 'Fewer crashes, more deaths' (#3)
+  # with who is killed/injured. Carries is_deleted/is_temp like the crash feed.
+  - dataset_id: xecs-rpy9
+    name: "Austin Crash Report Data - Crash Victim Demographic Records"
+    table: crash_victims
+    cursor_field: ":updated_at"
+    page_size: 2000
+    min_interval_seconds: 86400
+
+  # --- Housing layer (bead civic_intelligence-0kd) ---------------------------
+  # Short Term Rental Locations (Socrata 2fah-4p7e): licensed STRs — case_number,
+  # str_type (Type 1 owner-occupied vs Type 2/3 non-owner-occupied/commercial),
+  # prop_address, prop_zip, council_district. No parcel id (address/district only),
+  # so cross at district level. Licensed STRs only (many operate unlicensed).
+  - dataset_id: 2fah-4p7e
+    name: "Short Term Rental Locations"
+    table: short_term_rentals
+    cursor_field: ":updated_at"
+    page_size: 2000
+    min_interval_seconds: 86400
+
+  # Repeat Offender Registrations (Socrata 86z9-i27i): the city's registry of
+  # rental properties whose owners have repeated code violations — owner, parcelid
+  # (-> parcel_entity ownership join), numberofunits, active/total violations,
+  # councildistrict. Small registry (~76). Boosts story #8 with NAMED repeat
+  # offenders and owner type.
+  - dataset_id: 86z9-i27i
+    name: "Repeat Offender Registrations"
+    table: repeat_offenders
+    cursor_field: ":updated_at"
+    page_size: 1000
+    min_interval_seconds: 86400
+
+  # --- Lobbying layer (bead civic_intelligence-380) --------------------------
+  # Austin's registered-lobbyist disclosures, completing the influence arm
+  # (alongside raw_council_votes + raw_city_contracts). Four linked datasets:
+  #   master (registrant + registration dates), registrants (firm/employer),
+  #   clients (WHO hires lobbyists + comp_exact_amount + business_desc),
+  #   reports (per-filing spend on officials: food/bev, gifts, entertainment, travel).
+  - dataset_id: 96z6-upac
+    name: "Lobbyists - Master List"
+    table: lobbyist_master
+    cursor_field: ":updated_at"
+    page_size: 1000
+    min_interval_seconds: 86400
+
+  - dataset_id: 58ix-34ma
+    name: "Lobbyist - Registrants"
+    table: lobbyist_registrants
+    cursor_field: ":updated_at"
+    page_size: 1000
+    min_interval_seconds: 86400
+
+  - dataset_id: 7ena-g23u
+    name: "Lobbyist - Clients"
+    table: lobbyist_clients
+    cursor_field: ":updated_at"
+    page_size: 5000
+    min_interval_seconds: 86400
+
+  - dataset_id: aahu-djdd
+    name: "Lobbyist - Reports"
+    table: lobbyist_reports
+    cursor_field: ":updated_at"
+    page_size: 2000
+    min_interval_seconds: 86400
+
+  # --- Track D: popular resident-interest datasets (bead civic_intelligence-qq8) ---
+  # Austin Animal Center — the current (live-updating) intake + outcome feeds.
+  # Outcomes carry outcome_status (adopted/transfer/euthanasia/...), euthanasia_reason
+  # and days_in_shelter — the no-kill live-outcome metric + length of stay. The
+  # historical 2013-2025 copies (9t4d-g238 / wter-evkm) are FROZEN; these stay fresh.
+  - dataset_id: pyqf-r2dc
+    name: "Austin Animal Center Intakes"
+    table: animal_intakes
+    cursor_field: ":updated_at"
+    page_size: 2000
+    min_interval_seconds: 86400
+
+  - dataset_id: gsvs-ypi7
+    name: "Austin Animal Center Outcomes"
+    table: animal_outcomes
+    cursor_field: ":updated_at"
+    page_size: 2000
+    min_interval_seconds: 86400
+
+  # Food Establishment Inspection Scores (the portal's most-viewed dataset):
+  # restaurant_name, zip_code, inspection_date, score (0-100), address, process_desc.
+  - dataset_id: ecmv-9xxi
+    name: "Food Establishment Inspection Scores"
+    table: food_inspections
+    cursor_field: ":updated_at"
+    page_size: 2000
+    min_interval_seconds: 86400
+
+  # ---------------------------------------------------------------------------
+  # More to wire in (find ids in the catalog, then uncomment):
+  #   - Austin Animal Center intakes/outcomes
+  #   - TCAD appraisal roll (Tier 2 scrape/bulk — see CLAUDE.md)
+  # ---------------------------------------------------------------------------
+  # - dataset_id: <id>
+  #   name: "Traffic Crash Reports"
+  #   table: traffic_crashes
