@@ -1,6 +1,5 @@
-// Dashboard sidebar tabs. In the static build the Equity tab is removed (its
-// <Flags/> panel needs the live /v1 API); the tab definition is kept here so
-// flipping VITE_STATIC off restores it with no code change.
+// Static tabs require a reviewed baked payload. Keep unsupported features
+// visible but disabled with an explanation.
 export const ALL_TABS = [
   { value: 'data', label: 'Data' },
   { value: 'stories', label: 'Stories' },
@@ -10,5 +9,16 @@ export const ALL_TABS = [
   { value: 'council', label: 'Council' },
 ]
 
-export const visibleTabs = (isStatic) =>
-  isStatic ? ALL_TABS.filter((t) => t.value !== 'equity') : ALL_TABS
+const REASONS = {
+  equity: 'Equity flags are unavailable in this static edition; no flags payload is baked.',
+  owners: 'Ownership is unavailable because its static payload is missing or incomplete.',
+  council: 'Council sponsorship is unavailable because its static payload is missing or incomplete.',
+  methods: 'Methods are unavailable because their static payload is missing.',
+}
+
+export const visibleTabs = (isStatic, features = {}) => ALL_TABS.map((tab) => {
+  if (!isStatic) return tab
+  const disabled = tab.value === 'equity' ||
+    (['owners', 'council', 'methods'].includes(tab.value) && !features[tab.value])
+  return disabled ? { ...tab, disabled: true, reason: REASONS[tab.value] } : tab
+})

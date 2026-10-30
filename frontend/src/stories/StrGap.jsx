@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react'
 import StoryLayout, { Section, P, StatStrip, Figure, StoryFooter } from './StoryLayout.jsx'
 import { getStoryStrGap } from '../api.js'
+import { editionDate } from '../editionDate.js'
 
 const fmt = (n) => Number(n).toLocaleString('en-US')
 
@@ -40,17 +41,20 @@ export default function StrGap() {
   const ratioMetro = (d.active / d.licensed_n).toFixed(1)
   const pctEntire = Math.round((100 * d.entire) / d.active)
   const pctMulti = Math.round((100 * d.hosts.multi2) / d.active)
+  // The registry is pulled on a different day than the Airbnb snapshot; say so wherever the count appears.
+  const licensesAsOf = editionDate(d.generated_from?.raw_short_term_rentals)
+  const asOfNote = licensesAsOf ? ` (as of ${licensesAsOf})` : ''
 
   return (
     <StoryLayout
       eyebrow="Housing · Rentals"
       title="The STR licensing gap"
-      dek={`Austin has ${ratioCity}× more active Airbnb listings than STR licenses — and most listings still show no license number.`}
-      sources={[`Inside Airbnb snapshot ${d.snapshot_date} (CC BY 4.0)`, `${fmt(d.licensed_n)} licensed STRs`, 'Airbnb only — a floor']}
+      dek={`Austin has ${ratioCity}× more active Airbnb listings (${d.snapshot_date} snapshot) than STR licenses${asOfNote} — and most listings still show no license number.`}
+      sources={[`Inside Airbnb snapshot ${d.snapshot_date} (CC BY 4.0)`, `${fmt(d.licensed_n)} licensed STRs${asOfNote}`, 'Airbnb only — a floor']}
     >
       <StatStrip items={[
         { value: fmt(d.active), label: 'Recently active Airbnb listings', sub: `${fmt(d.total)} listed in total` },
-        { value: fmt(d.licensed_n), label: 'Licensed STRs, all types', sub: 'city registry' },
+        { value: fmt(d.licensed_n), label: 'Licensed STRs, all types', sub: `city registry${asOfNote}` },
         { value: `${ratioCity}×`, label: 'Active listings per license, in-district', sub: `${ratioMetro}× metro-wide` },
       ]} />
 
@@ -58,7 +62,7 @@ export default function StrGap() {
         <P>Inside Airbnb's {d.snapshot_date} snapshot lists <strong>{fmt(d.total)}</strong> Austin
         short-term rentals on Airbnb alone, of which <strong>{fmt(d.active)}</strong> had a guest
         review in the last 12 months. The city's registry holds <strong>{fmt(d.licensed_n)}</strong>{' '}
-        licenses of any type. Restricting to the {fmt(d.in_district)} active listings that geolocate
+        licenses of any type{asOfNote}. Restricting to the {fmt(d.in_district)} active listings that geolocate
         inside the 10 council districts — the city's licensing jurisdiction — there are still{' '}
         <strong>{ratioCity}×</strong> more active listings than licenses. {pctEntire}% of active
         listings are entire homes, not spare rooms.</P>
@@ -94,7 +98,7 @@ export default function StrGap() {
         methodology={d.methodology}
         sources={[
           { name: 'raw_airbnb_listings', detail: `Inside Airbnb Austin summary snapshot ${d.snapshot_date} — data by Inside Airbnb (insideairbnb.com), licensed CC BY 4.0.` },
-          { name: 'raw_short_term_rentals', detail: 'City of Austin STR license registry.' },
+          { name: 'raw_short_term_rentals', detail: `City of Austin STR license registry${licensesAsOf ? `, pulled ${licensesAsOf}` : ''}.` },
         ]}
         limits={d.caveat.split('. ').map((s) => s.replace(/\.$/, '') + '.')}
         updated="the latest `cli refresh` after an Inside Airbnb snapshot load"

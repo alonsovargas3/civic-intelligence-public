@@ -15,7 +15,7 @@ export function TopNav({ variant = 'light', active }) {
   const activeColor = slate ? 'var(--on-slate)' : 'var(--ink)'
   const underline = slate ? 'var(--amber)' : 'var(--accent)'
   return (
-    <div style={{
+    <div className="cii-top-nav" style={{
       display: 'flex', alignItems: 'center', gap: 28, padding: '16px 36px',
       background: slate ? 'transparent' : 'var(--surface)',
       borderBottom: slate ? '1px solid rgba(246,244,239,.15)' : '1px solid var(--hairline)',
@@ -26,7 +26,7 @@ export function TopNav({ variant = 'light', active }) {
           {BRAND_NAME}
         </span>
       </Link>
-      <nav style={{ display: 'flex', gap: 22, marginLeft: 20 }}>
+      <nav className="cii-nav-links" aria-label="Main navigation" style={{ display: 'flex', gap: 22, marginLeft: 20 }}>
         {NAV_ITEMS.map((item) => {
           const on = item.key === active
           return (
@@ -47,7 +47,7 @@ export function TopNav({ variant = 'light', active }) {
           }}>Your address</Link>
         )}
       </nav>
-      <span style={{
+      <span className="cii-nav-tagline" style={{
         marginLeft: 'auto', flex: 'none', display: 'inline-flex', alignItems: 'center', gap: 8,
         whiteSpace: 'nowrap', font: '600 12px/1 var(--font-sans)',
         color: slate ? 'var(--sage)' : 'var(--positive)',

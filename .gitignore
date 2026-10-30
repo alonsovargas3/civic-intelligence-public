@@ -28,7 +28,8 @@ frontend/dist/
 
 # --- Generated data (never committed; produced from your own database) ---
 # Static dashboard snapshots baked by scripts/export_static.py
-frontend/public/data/
+frontend/public/data/*
+!frontend/public/data/dashboard_availability.json
 # Story markdown produced by scripts/export_stories.py
 docs/stories/
 # Findings produced by scripts/analyze_*.py

@@ -1,37 +1,30 @@
-# Runbook — build the static (database-free) dashboard
+# Public static build
 
-Produces a CDN-hostable `frontend/dist/` with no backend. The static variant also
-hides the "Your address" link/`/you` flow and the "Equity" sidebar tab. All of this
-is gated by `VITE_STATIC=1`; the default build is unchanged.
+This repository is a source-code snapshot with no approved analytical data package.
+The committed availability file is control metadata only: all counts and data-dependent
+tabs are unavailable. Story routes show an explicit unavailable page. Topic cards are
+an inventory, not current findings. No backend, credentials, or private export is needed.
 
-## 1. Bake the data snapshots (needs the DB up)
+From the repository root:
 
-    # Postgres must be running (docker compose up db, or local PG the API points at)
-    # Run from the repo root; no PYTHONPATH needed (the script bootstraps its own path).
-    python scripts/export_static.py            # writes frontend/public/data/*.json
-    python scripts/export_static.py --check     # verify all expected files present
+```sh
+cd frontend
+npm ci
+npm test
+VITE_STATIC=1 npm run build
+npm run preview
+```
 
-The snapshots are a point-in-time freeze. Re-run the exporter to refresh. They are
-gitignored — regenerate before each build.
+Check home, navigation, methodology/about, stories index, a story route, and dashboard.
+The dashboard must show disabled crime/311 years, Ownership/Council/Methods/Equity,
+and no map or counts. Address lookup remains unavailable. No `/v1` request is needed.
+The default live build remains available for developers supplying their own backend;
+it is not the public snapshot build.
 
-## 2. Build the static site
+To enable data later, separately approve fixture provenance, license, dates, geographic
+coverage, schemas, time windows, denominators, and narrative claims. Use synthetic,
+clearly labeled examples or separately approved public aggregates and geometry. Do not
+copy private `frontend/public/data`, generated reports, screenshots, or raw records.
+The private exporter and infrastructure are not part of this code-only sync.
 
-    cd frontend
-    VITE_STATIC=1 npm run build                 # -> frontend/dist/
-
-## 3. Verify with NO backend (isolated ground truth)
-
-Stop the API and DB, then:
-
-    cd frontend && npm run preview
-
-Confirm in the browser: every panel (Data, Stories, Methods, Ownership, Council) and
-every story page renders from /data/*.json, and the "Your address" link, "Equity"
-tab, and #/you page are all absent. Because nothing is fetching /v1, this proves the
-build is database-free.
-
-## Notes / limits
-
-- Map label glyphs still load from demotiles.maplibre.org at runtime (fonts only,
-  not data). Self-hosting them is an optional later polish.
-- To restore the removed UI, build without VITE_STATIC — no code change needed.
+Preserve LICENSE unchanged. Review the complete public diff before any public push.

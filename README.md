@@ -5,10 +5,17 @@ of sourced civic "data stories" and a read-only dashboard. The code ingests open
 Postgres, builds aggregate metric tables, serves them through a small read API, and renders
 them in a React/Vite frontend.
 
-> **Status: code snapshot only.** This repository holds the source code as of **2026-10-05**.
-> It contains **no data and no generated outputs**. A data refresh is still in progress in a
-> separate, private environment. **This repository does not claim that all 19 stories are
-> current.** There is **no public hosted version** of the app.
+> **Status: code snapshot only.** The initial source snapshot is dated **2026-10-05**;
+> code-only frontend improvements were prepared on **2026-10-30**. This repository
+> contains **no analytical or raw data and no generated results**. Its availability
+> document is control metadata with all analytical features disabled. This repository
+> does not claim current results for the 19 stories and provides no hosted app.
+
+## Build the code-only public snapshot
+
+Use the [public static build instructions](docs/runbooks/static-dashboard-build.md).
+This mode works without a database and displays explicit unavailable states for
+analytical results. No analytical fixtures are approved or bundled.
 
 ## What it was built for: 19 data stories
 
@@ -115,25 +122,29 @@ npm install
 npm run dev                                    # Vite proxies /v1 → 127.0.0.1:8000
 ```
 
-### Static (database-free) mode: data not included
+### Static code-only mode
 
-`VITE_STATIC=1` makes the frontend read pre-baked JSON from `frontend/public/data/` instead of
-calling `/v1`. **Those snapshots are not in this repository.** They are generated aggregates
-and stay out of version control (`frontend/public/data/` is gitignored). To use static mode,
-generate them from your own database first:
+Follow the [public static build instructions](docs/runbooks/static-dashboard-build.md):
 
 ```bash
-python scripts/export_static.py            # needs the DB; writes frontend/public/data/*.json
-cd frontend && VITE_STATIC=1 npm run build
+cd frontend
+npm ci
+npm test
+VITE_STATIC=1 npm run build
+npm run preview
 ```
 
-The food-inspections page can also read an optional `/data/story_refresh_status.json`
-(refresh provenance). When it is missing, the page says that source accounting is
-unavailable. That file is not included either.
+This build needs no database, credentials, or generated analytical snapshots. The committed
+`frontend/public/data/dashboard_availability.json` is empty control metadata: crime/311
+years and data-dependent tabs are disabled. Static story routes show an explicit
+"Story data unavailable" page. Home, navigation, topic lists, methodology and about pages
+remain available. No `/v1` backend is required.
 
-Without generated snapshots, static mode builds, but the story and panel pages show a
-"could not load" or pending state. This is expected. See
-`docs/runbooks/static-dashboard-build.md`.
+Analytical snapshots remain gitignored; only the empty availability control document is
+tracked. Enabling analytical results later requires a separately reviewed public data
+package, matching narrative claims, availability generation, and an explicit change to the
+static story route guard. The database exporter is for developers using their own backend;
+it is not required for this code-only snapshot.
 
 The story markdown exporter (`scripts/export_stories.py`) and the analysis scripts
 (`scripts/analyze_*.py`) also write generated outputs (`docs/stories/`,
@@ -165,7 +176,7 @@ disposable local test database.
 
 This repository was curated from a private working repository. On purpose, it does **not** include:
 
-- any data: raw source extracts, database dumps, generated aggregate JSON, story markdown,
+- analytical or raw data: source extracts, database dumps, generated aggregate JSON, story markdown,
   findings write-ups, or built frontend output;
 - 2026 refresh pipeline code that is tied to private infrastructure: snapshot/acquisition
   runners, supervision, deployment and control scripts, per-story refresh jobs, and their

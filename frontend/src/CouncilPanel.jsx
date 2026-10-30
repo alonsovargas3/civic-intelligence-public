@@ -26,7 +26,7 @@ export default function CouncilPanel() {
       <Segmented value={view} onChange={setView} size="sm" options={VIEWS} />
       {view === 'funding' ? <Funding /> : <Representation />}
       <p className="cii-footnote" style={{ color: 'var(--fg-subtle)' }}>
-        Sponsorship ≠ votes (not published) ≠ quid pro quo. Research, not advocacy.
+        This panel shows sponsorship, not vote records or causal influence. Research, not advocacy.
       </p>
     </div>
   )
