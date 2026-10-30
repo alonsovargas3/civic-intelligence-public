@@ -1,15 +1,13 @@
 import React, { useEffect, useState } from 'react'
-import { getIncidents, getDistrict } from './api.js'
+import { getDistrict } from './api.js'
 import { StatTile, Badge, BarRow } from './Primitives.jsx'
+import { detailError } from './dashboardData.js'
 
 const fmt = (n) => Number(n).toLocaleString('en-US')
 const days1 = (d) => (Math.round(Number(d) * 10) / 10).toFixed(1)
 
-function Ranking({ dataset, year, onSelect }) {
-  const [rows, setRows] = useState(null)
-  useEffect(() => { getIncidents(dataset, year).then(setRows) }, [dataset, year])
+function Ranking({ dataset, year, onSelect, rows }) {
   const metricLabel = dataset === 'crime' ? 'Crime incidents' : '311 requests'
-  if (!rows) return <p className="cii-small">Loading citywide ranking…</p>
   const sorted = [...rows].sort((a, b) => b.incident_count - a.incident_count)
   const max = sorted.length ? sorted[0].incident_count : 1
   return (
@@ -49,17 +47,28 @@ function Ranking({ dataset, year, onSelect }) {
   )
 }
 
-function Detail({ district, dataset, year }) {
+function Detail({ district, dataset, year, row }) {
   const [data, setData] = useState(null)
-  useEffect(() => { setData(null); getDistrict(district, year).then(setData) }, [district, year])
+  const [error, setError] = useState(null)
+  useEffect(() => {
+    let active = true
+    setData(null); setError(null)
+    getDistrict(district, year).then((result) => {
+      if (!active) return
+      const issue = detailError(result, row, dataset, year)
+      if (issue) setError(issue)
+      else setData(result)
+    }).catch(() => { if (active) setError('District detail could not be loaded.') })
+    return () => { active = false }
+  }, [district, dataset, year, row])
+  if (error) return <p role="status" className="cii-small">{error}</p>
   if (!data) return <p className="cii-small">Loading district {district}…</p>
 
-  const totalsBy = Object.fromEntries((data.totals_by_dataset || []).map((t) => [t.dataset, t.n]))
   const breakdown = (data.breakdown || [])
     .filter((b) => b.dataset === dataset)
     .sort((a, b) => b.value - a.value).slice(0, 8)
   const max = breakdown.length ? Math.max(...breakdown.map((b) => b.value)) : 1
-  const rt = data.response_time
+  const rt = dataset === '311' ? data.response_time : null
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
@@ -71,14 +80,14 @@ function Detail({ district, dataset, year }) {
       <div>
         <div className="cii-eyebrow" style={{ marginBottom: 8 }}>Totals</div>
         <div style={{ display: 'flex', gap: 10 }}>
-          <StatTile label="311 requests" value={fmt(totalsBy['311'] ?? 0)} accent={dataset === '311'} />
-          <StatTile label="Crime incidents" value={fmt(totalsBy.crime ?? 0)} accent={dataset === 'crime'} />
+          <StatTile label={dataset === 'crime' ? 'Crime incidents' : '311 requests'}
+            value={fmt(row.incident_count)} accent />
         </div>
       </div>
 
       {rt && rt.median_days != null && (
         <div style={{ padding: '14px 16px', borderRadius: 'var(--r-md)', background: 'var(--surface)', border: '1px solid var(--hairline)' }}>
-          <div className="cii-eyebrow" style={{ marginBottom: 8 }}>311 median response</div>
+          <div className="cii-eyebrow" style={{ marginBottom: 8 }}>311 median response · {year}</div>
           <div style={{ display: 'flex', alignItems: 'baseline', gap: 6, whiteSpace: 'nowrap' }}>
             <span className="cii-stat" style={{ fontSize: 26 }}>{days1(rt.median_days)}</span>
             <span style={{ font: '500 14px/1 var(--font-sans)', color: 'var(--fg-muted)' }}>days</span>
@@ -90,7 +99,7 @@ function Detail({ district, dataset, year }) {
       )}
 
       <div>
-        <div className="cii-eyebrow" style={{ marginBottom: 4 }}>Top categories / types</div>
+        <div className="cii-eyebrow" style={{ marginBottom: 4 }}>Top categories / types (partial list)</div>
         {breakdown.length === 0
           ? <p className="cii-small" style={{ marginTop: 6 }}>No {dataset === 'crime' ? 'crime' : '311'} breakdown for this district / year.</p>
           : breakdown.map((b, i) => <BarRow key={i} label={b.label} value={b.value} max={max} active={i === 0} />)}
@@ -99,7 +108,11 @@ function Detail({ district, dataset, year }) {
   )
 }
 
-export default function DataPanel({ dataset, year, selected, onSelect }) {
-  if (selected == null) return <Ranking dataset={dataset} year={year} onSelect={onSelect} />
-  return <Detail district={selected} dataset={dataset} year={year} />
+export default function DataPanel({ dataset, year, selected, onSelect, rows, loading, error }) {
+  if (error) return <p role="status" className="cii-small">{error}</p>
+  if (loading || !rows) return <p role="status" className="cii-small">Loading verified district data…</p>
+  if (selected == null) return <Ranking dataset={dataset} year={year} onSelect={onSelect} rows={rows} />
+  const row = rows.find((item) => item.council_district === Number(selected))
+  if (!row) return <p role="status" className="cii-small">District {selected} has no verified data for {year}.</p>
+  return <Detail key={`${selected}:${dataset}:${year}`} district={Number(selected)} dataset={dataset} year={year} row={row} />
 }

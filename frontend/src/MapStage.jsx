@@ -1,6 +1,7 @@
 import React from 'react'
 import MapView from './Map.jsx'
 import { Segmented, YearSelect, Icon } from './Primitives.jsx'
+import { availableYears, DATASETS, YEARS } from './dashboardData.js'
 
 const BLUE_RAMP = ['#f7fbff', '#deebf7', '#c6dbef', '#9ecae1', '#6baed6',
   '#4292c6', '#2171b5', '#08519c', '#08306b']
@@ -42,43 +43,65 @@ function MapLegend({ dataset, year, view }) {
   )
 }
 
-export default function MapStage({ dataset, setDataset, year, setYear, selected, onSelect, view, setView }) {
+export default function MapStage({ dataset, setDataset, year, setYear, selected, onSelect, view, setView, availability, rows, dataError }) {
+  const years = availableYears(availability, dataset)
+  const unavailableYears = YEARS.filter((item) => !years.includes(item))
+  const hasMap = Boolean(rows || availability?.features?.zips)
   return (
     <div style={{
       position: 'relative', height: '100%', width: '100%',
       background: 'var(--canvas)', overflow: 'hidden',
     }}>
       {/* The real MapLibre choropleth fills the stage */}
-      <MapView dataset={dataset} period={year} onSelect={onSelect} selected={selected} view={view} />
+      {hasMap && <MapView key={availability?.features?.zips ? 'with-zips' : 'districts-only'}
+        rows={rows} onSelect={onSelect} selected={selected} view={view}
+        zipsEnabled={Boolean(availability?.features?.zips)} />}
 
       {/* Floating controls (top-left): geography toggle, then dataset + year */}
-      <div style={{
+      <div className="cii-map-controls" style={{
         position: 'absolute', top: 16, left: 16, zIndex: 6,
         display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap',
       }}>
         <div style={{ display: 'inline-flex', alignItems: 'center', padding: 4, borderRadius: 'var(--r-pill)', ...GLASS }}>
           <Segmented value={view} onChange={setView} size="sm" options={[
             { value: 'districts', label: 'Districts' },
-            { value: 'zips', label: 'ZIPs' },
+            { value: 'zips', label: 'ZIPs', disabled: !availability?.features?.zips,
+              reason: 'ZIP assessment geometry is unavailable in this edition.' },
           ]} />
         </div>
         {view === 'districts' && (
           <>
             <div style={{ display: 'inline-flex', alignItems: 'center', padding: 4, borderRadius: 'var(--r-pill)', ...GLASS }}>
-              <Segmented value={dataset} onChange={setDataset} options={[
-                { value: 'crime', label: 'Crime', icon: 'shield-alert' },
-                { value: '311', label: '311 requests', icon: 'phone-call' },
-              ]} />
+              <Segmented value={dataset} onChange={setDataset} options={DATASETS.map((item) => ({
+                value: item, label: item === 'crime' ? 'Crime' : '311 requests',
+                icon: item === 'crime' ? 'shield-alert' : 'phone-call',
+                disabled: !availableYears(availability, item).length,
+                reason: 'No complete annual district snapshot is available for this dataset.',
+              }))} />
             </div>
-            <YearSelect value={year} onChange={setYear} />
+            <YearSelect value={year} onChange={setYear} years={YEARS} availableYears={years} />
           </>
         )}
       </div>
 
-      <MapLegend dataset={dataset} year={year} view={view} />
+      {view === 'districts' && (dataError || (availability && !years.length)) && (
+        <p role="status" className="cii-small cii-map-notice" style={{ position: 'absolute', top: 72, left: 16, zIndex: 6,
+          maxWidth: 320, padding: 10, background: 'var(--surface)' }}>
+          {dataError || 'This edition has no complete annual district snapshot. Unavailable choices are disabled.'}
+        </p>
+      )}
+
+      {view === 'districts' && availability && years.length > 0 && unavailableYears.length > 0 && (
+        <p className="cii-footnote cii-map-notice" style={{ position: 'absolute', top: 72, left: 16, zIndex: 6,
+          maxWidth: 320, padding: 10, background: 'var(--surface)' }}>
+          {unavailableYears.map((item) => `${item}: ${availability.reasons?.[`${dataset}:${item}`] || 'annual data unavailable'}`).join(' · ')}
+        </p>
+      )}
+
+      {hasMap && <MapLegend dataset={dataset} year={year} view={view} />}
 
       {/* Attribution */}
-      <div style={{
+      {hasMap && <div style={{
         position: 'absolute', right: 12, bottom: 12, zIndex: 5,
         display: 'inline-flex', alignItems: 'center', gap: 6,
         font: '500 11px/1 var(--font-sans)', color: 'var(--fg-muted)',
@@ -86,7 +109,7 @@ export default function MapStage({ dataset, setDataset, year, setYear, selected,
         borderRadius: 'var(--r-pill)', border: '1px solid var(--hairline)',
       }}>
         MapLibre <Icon name="info" size={13} color="var(--fg-subtle)" />
-      </div>
+      </div>}
     </div>
   )
 }

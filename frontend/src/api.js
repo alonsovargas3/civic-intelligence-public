@@ -6,7 +6,13 @@ import { STATIC } from './config.js'
 export const staticPath = (url) =>
   '/data/' + url.replace(/^\/v1\//, '').replace(/[^a-zA-Z0-9]+/g, '_').replace(/^_|_$/g, '') + '.json'
 
-const j = (url) => fetch(STATIC ? staticPath(url) : url).then((r) => r.json())
+const j = async (url) => {
+  const response = await fetch(STATIC ? staticPath(url) : url)
+  if (!response.ok) throw new Error(`HTTP ${response.status} for ${url}`)
+  return response.json()
+}
+
+export const getDashboardAvailability = () => j('/v1/dashboard-availability')
 
 export const getIncidents = (dataset, period) =>
   j(`/v1/metric/incidents?dataset=${dataset}&period=${period}`)

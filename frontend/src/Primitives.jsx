@@ -42,13 +42,14 @@ export function Segmented({ options, value, onChange, size = 'md' }) {
       {options.map((opt) => {
         const active = opt.value === value
         return (
-          <button key={opt.value} role="tab" aria-selected={active}
+          <button key={opt.value} role="tab" aria-selected={active} disabled={opt.disabled}
+            title={opt.reason || ''}
             onClick={() => onChange(opt.value)}
             style={{
               display: 'inline-flex', alignItems: 'center', gap: 6, padding: pad,
-              border: 'none', cursor: 'pointer', borderRadius: 'var(--r-pill)',
+              border: 'none', cursor: opt.disabled ? 'not-allowed' : 'pointer', borderRadius: 'var(--r-pill)',
               font: `600 ${fs}px/1 var(--font-sans)`,
-              color: active ? '#fff' : 'var(--fg-muted)',
+              color: active ? '#fff' : 'var(--fg-muted)', opacity: opt.disabled ? 0.5 : 1,
               background: active ? 'var(--accent)' : 'transparent',
               boxShadow: active ? 'var(--shadow-sm)' : 'none',
               transition: 'color var(--dur) var(--ease), background var(--dur) var(--ease)',
@@ -64,7 +65,7 @@ export function Segmented({ options, value, onChange, size = 'md' }) {
 }
 
 /* Compact year select with custom chevron */
-export function YearSelect({ value, onChange, years = ['2025', '2024', '2023'] }) {
+export function YearSelect({ value, onChange, years = ['2025', '2024', '2023'], availableYears = years }) {
   return (
     <label style={{
       display: 'inline-flex', alignItems: 'center', gap: 6,
@@ -79,7 +80,9 @@ export function YearSelect({ value, onChange, years = ['2025', '2024', '2023'] }
           background: 'transparent', font: '600 13.5px/1 var(--font-sans)',
           color: 'var(--ink)', cursor: 'pointer', paddingRight: 16, outline: 'none',
         }}>
-        {years.map((y) => <option key={y} value={y}>{y}</option>)}
+        {years.map((y) => <option key={y} value={y} disabled={!availableYears.includes(y)}>
+          {y}{availableYears.includes(y) ? '' : ' — unavailable'}
+        </option>)}
       </select>
       <Icon name="chevron-down" size={14} color="var(--fg-muted)"
         style={{ position: 'absolute', right: 10, pointerEvents: 'none' }} />
@@ -90,16 +93,17 @@ export function YearSelect({ value, onChange, years = ['2025', '2024', '2023'] }
 /* Panel tabs with an underline thumb */
 export function Tabs({ tabs, value, onChange }) {
   return (
-    <div style={{ display: 'flex', gap: 2, borderBottom: '1px solid var(--hairline)' }}>
+    <div className="cii-panel-tabs" style={{ display: 'flex', gap: 2, borderBottom: '1px solid var(--hairline)' }}>
       {tabs.map((t) => {
         const active = t.value === value
         return (
-          <button key={t.value} onClick={() => onChange(t.value)}
+          <button key={t.value} onClick={() => onChange(t.value)} disabled={t.disabled}
+            title={t.reason || ''}
             style={{
               position: 'relative', flex: '0 0 auto', padding: '11px 12px 12px',
               border: 'none', background: 'transparent', cursor: 'pointer',
               font: `${active ? 600 : 500} 13.5px/1 var(--font-sans)`,
-              color: active ? 'var(--ink)' : 'var(--fg-muted)',
+              color: active ? 'var(--ink)' : 'var(--fg-muted)', opacity: t.disabled ? 0.5 : 1,
               transition: 'color var(--dur) var(--ease)',
             }}>
             {t.label}

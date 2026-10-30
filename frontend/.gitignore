@@ -1,3 +1,4 @@
 node_modules/
 dist/
-public/data/
+public/data/*
+!public/data/dashboard_availability.json

@@ -4,7 +4,16 @@ import { Caveat } from './Primitives.jsx'
 
 export default function Methods({ metric }) {
   const [m, setM] = useState(null)
-  useEffect(() => { getMethods(metric).then(setM) }, [metric])
+  const [error, setError] = useState(null)
+  useEffect(() => {
+    let active = true
+    setM(null); setError(null)
+    getMethods(metric).then((result) => {
+      if (active) setM(result)
+    }).catch(() => { if (active) setError('Methods could not be loaded for this edition.') })
+    return () => { active = false }
+  }, [metric])
+  if (error) return <p role="status" className="cii-small">{error}</p>
   if (!m) return <p className="cii-small">Loading methods…</p>
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>

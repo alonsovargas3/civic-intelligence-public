@@ -157,3 +157,20 @@
   letter-spacing: .06em;
   text-transform: uppercase;
 }
+
+/* Keep panel tabs within their column at every viewport width. */
+.cii-panel-tabs { flex-wrap: wrap; }
+.cii-dashboard-panel { min-width: 0; }
+
+/* Keep navigation and dashboard controls reachable on narrow screens. */
+@media (max-width: 1000px) {
+  .cii-top-nav { flex-wrap: wrap; gap: 16px !important; padding: 16px !important; }
+  .cii-nav-links { flex-basis: 100%; flex-wrap: wrap; gap: 16px !important; margin-left: 0 !important; }
+  .cii-nav-tagline { display: none !important; }
+  .cii-dashboard { height: auto !important; min-height: 100vh; }
+  .cii-dashboard-grid { grid-template-columns: minmax(0, 1fr) !important; grid-template-rows: 320px minmax(300px, auto); }
+  .cii-dashboard-panel { min-width: 0; border-left: 0 !important; border-top: 1px solid var(--hairline); }
+  .cii-panel-tabs { flex-wrap: wrap; }
+  .cii-map-controls { right: 16px; }
+  .cii-map-notice { top: 164px !important; right: 16px; max-width: none !important; margin: 0; }
+}
